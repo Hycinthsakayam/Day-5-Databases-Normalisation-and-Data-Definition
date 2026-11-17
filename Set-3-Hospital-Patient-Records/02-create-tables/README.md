@@ -1,12 +1,14 @@
-# Task 2 – Create Database and Tables
+# Question 2 – Create Database and Tables
 
 `CK_Visit_Date` allows visit dates from 2000-01-01 up to today, `CK_Bill_Amount` does not allow a negative amount, and `DF_Visit_Status` sets the status to 'Open' by default.
 
-## Input
+## Query files
 
 - [schema.sql](schema.sql)
 
 ## Output
+
+Full text output: [output.txt](output.txt)
 
 **Create tables**
 
@@ -19,3 +21,8 @@
 **Default status and CHECK tests**
 
 ![t2_tests.png](t2_tests.png)
+
+
+## Approach
+
+![flowchart](flowchart.svg)

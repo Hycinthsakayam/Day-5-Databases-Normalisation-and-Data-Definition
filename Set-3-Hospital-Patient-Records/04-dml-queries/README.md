@@ -1,13 +1,15 @@
-# Task 4 – Insert, Update, Delete and Retrieve
+# Question 4 – Insert, Update, Delete and Retrieve
 
 Sample data is in `seed_data.sql`. `task4_dml_queries.sql` adds a visit with its bill, closes a visit, deletes the cancelled visit, lists patients who visited in October 2026 and finds doctors with `LIKE 'Cardio%'` and `LIKE 'Dr. S%'`.
 
-## Input
+## Query files
 
 - [seed_data.sql](seed_data.sql)
 - [task4_dml_queries.sql](task4_dml_queries.sql)
 
 ## Output
+
+Full text output: [output.txt](output.txt)
 
 **Rows inserted**
 
@@ -32,3 +34,8 @@ Sample data is in `seed_data.sql`. `task4_dml_queries.sql` adds a visit with its
 **Doctors using LIKE**
 
 ![t4_like.png](t4_like.png)
+
+
+## Approach
+
+![flowchart](flowchart.svg)

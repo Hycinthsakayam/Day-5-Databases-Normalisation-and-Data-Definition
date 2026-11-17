@@ -1,4 +1,4 @@
-# Task 3 – DROP vs TRUNCATE vs DELETE
+# Question 3 – DROP vs TRUNCATE vs DELETE
 
 Each command is run on a test table first inside `BEGIN TRAN ... ROLLBACK`, then for real.
 
@@ -8,11 +8,13 @@ Each command is run on a test table first inside `BEGIN TRAN ... ROLLBACK`, then
 | TRUNCATE | reset to seed (new id 1) | yes, rows came back | all rows removed at once, table stays |
 | DROP | gone with the table | yes, table came back | whole table removed, SELECT gives Msg 208 |
 
-## Input
+## Query files
 
 - [task3_delete_truncate_drop.sql](task3_delete_truncate_drop.sql)
 
 ## Output
+
+Full text output: [output.txt](output.txt)
 
 **DELETE**
 
@@ -25,3 +27,8 @@ Each command is run on a test table first inside `BEGIN TRAN ... ROLLBACK`, then
 **DROP**
 
 ![t3_drop.png](t3_drop.png)
+
+
+## Approach
+
+![flowchart](flowchart.svg)

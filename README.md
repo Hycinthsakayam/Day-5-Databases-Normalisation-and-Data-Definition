@@ -36,10 +36,10 @@ Each question has its own folder. Inside, you can find:
 
 - The SQL script (`schema.sql`, `seed_data.sql`, ...) or MongoDB script (`collections.js`).
 - `output.txt` with the result of running it, and screenshots of the output (`.png`).
-- `explanation.md` with what the question asks and what the output shows.
+- `README.md` with the question, the query and the output screenshots (it opens automatically on GitHub).
 - `flowchart.svg`, which shows the steps followed.
 
-Question 1 of each set has the normalisation steps and the ER diagram. Each set also has a `SET-NOTES.md`.
+Question 1 of each set has the normalisation steps and the ER diagram in its `README.md`. Each set also has a `SET-NOTES.md`.
 
 ## Running
 

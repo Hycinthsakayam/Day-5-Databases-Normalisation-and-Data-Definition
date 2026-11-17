@@ -1,4 +1,4 @@
-# Task 5 – Activity Logs in a Capped Collection
+# Question 5 – Activity Logs in a Capped Collection
 
 A capped collection `activity_logs` (1 MB, max 5000 documents) gets 20 activity documents, then the last five LOGIN events of customer 1001 are queried.
 
@@ -9,10 +9,17 @@ A capped collection `activity_logs` (1 MB, max 5000 documents) gets 20 activity 
 - Logs are read for one customer and a time range, with no joins: a simple `find().sort().limit()`.
 - Keeping this high-volume data out of SQL Server keeps the account tables small and fast.
 
-## Input
+## Query files
 
 - [collections.js](collections.js)
 
 ## Output
 
+Full text output: [output.txt](output.txt)
+
 ![collections.png](collections.png)
+
+
+## Approach
+
+![flowchart](flowchart.svg)

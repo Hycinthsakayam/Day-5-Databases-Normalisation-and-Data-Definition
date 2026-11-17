@@ -1,4 +1,4 @@
-# Task 3 – Insert Data and Failing Inserts
+# Question 3 – Insert Data and Failing Inserts
 
 `seed_data.sql` inserts 10 or more rows into every table. `task3_failing_inserts.sql` runs four inserts that must fail:
 
@@ -9,12 +9,14 @@
 | 3 | quantity -5 | CK_Inventory_Qty | Msg 547 |
 | 4 | product_name NULL | NOT NULL | Msg 515 |
 
-## Input
+## Query files
 
 - [seed_data.sql](seed_data.sql)
 - [task3_failing_inserts.sql](task3_failing_inserts.sql)
 
 ## Output
+
+Full text output: [output.txt](output.txt)
 
 **Seed data**
 
@@ -27,3 +29,8 @@
 **Four failing inserts**
 
 ![task3b.png](task3b.png)
+
+
+## Approach
+
+![flowchart](flowchart.svg)

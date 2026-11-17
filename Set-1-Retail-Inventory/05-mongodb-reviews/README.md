@@ -1,4 +1,4 @@
-# Task 5 – MongoDB Reviews Collection
+# Question 5 – MongoDB Reviews Collection
 
 | Data | Store | Reason |
 |---|---|---|
@@ -8,12 +8,19 @@
 
 The reviews collection has a `$jsonSchema` validator. The script runs insertMany, find, updateOne and deleteOne, and shows a review with rating 7 being rejected.
 
-## Input
+## Query files
 
 - [collections.js](collections.js)
 
 ## Output
 
+Full text output: [output.txt](output.txt)
+
 ![task5_1.png](task5_1.png)
 
 ![task5_2.png](task5_2.png)
+
+
+## Approach
+
+![flowchart](flowchart.svg)

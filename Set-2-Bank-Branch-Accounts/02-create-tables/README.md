@@ -1,4 +1,4 @@
-# Task 2 – Create Tables
+# Question 2 – Create Tables
 
 IDENTITY keys, UNIQUE account numbers, and `CK_Savings_Balance` so a savings balance cannot go below 0 (a current account can, as overdraft).
 
@@ -10,11 +10,13 @@ IDENTITY keys, UNIQUE account numbers, and `CK_Savings_Balance` so a savings bal
 - Account → Branch, RelationshipManager → Branch: **NO ACTION**. A branch with accounts or staff cannot be removed.
 - AccountTransaction → Account: **NO ACTION**. Transaction history must never be deleted automatically.
 
-## Input
+## Query files
 
 - [schema.sql](schema.sql)
 
 ## Output
+
+Full text output: [output.txt](output.txt)
 
 **Create tables**
 
@@ -27,3 +29,8 @@ IDENTITY keys, UNIQUE account numbers, and `CK_Savings_Balance` so a savings bal
 **Testing CHECK and UNIQUE**
 
 ![t2_savings_check.png](t2_savings_check.png)
+
+
+## Approach
+
+![flowchart](flowchart.svg)
