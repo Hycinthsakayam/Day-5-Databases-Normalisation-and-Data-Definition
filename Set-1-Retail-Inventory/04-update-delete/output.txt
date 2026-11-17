@@ -1,0 +1,98 @@
+/* =====================================================================
+   Day 5 - Set 1 : Retail Inventory and Product Reviews
+   File          : task4_update_delete.sql   (Task 4)
+   Purpose       : UPDATE and DELETE with WHERE, with SELECT before/after.
+   ===================================================================== */
+
+USE RetailInventoryDB;
+
+/* ---------- A. Correct a supplier phone number ---------- */
+PRINT '=== A1. BEFORE update : Chennai Electronics ===';
+SELECT supplier_id, supplier_name, phone
+FROM   dbo.Supplier
+WHERE  supplier_name = 'Chennai Electronics';
+=== A1. BEFORE update : Chennai Electronics ===
+supplier_id | supplier_name       | phone
+------------+---------------------+---------------
+2           | Chennai Electronics | +91 9840022222
+
+(1 row affected)
+
+UPDATE dbo.Supplier
+SET    phone = '+91 9876543210'
+WHERE  supplier_name = 'Chennai Electronics';
+(1 row affected)
+
+PRINT '=== A2. AFTER update : Chennai Electronics ===';
+SELECT supplier_id, supplier_name, phone
+FROM   dbo.Supplier
+WHERE  supplier_name = 'Chennai Electronics';
+=== A2. AFTER update : Chennai Electronics ===
+supplier_id | supplier_name       | phone
+------------+---------------------+---------------
+2           | Chennai Electronics | +91 9876543210
+
+(1 row affected)
+
+/* ---------- B. Remove discontinued SKUs ---------- */
+PRINT '=== B1. BEFORE delete : discontinued products and their stock rows ===';
+SELECT sku, product_name, is_discontinued
+FROM   dbo.Product
+WHERE  is_discontinued = 1;
+
+SELECT i.sku, i.warehouse_id, i.quantity
+FROM   dbo.Inventory i
+JOIN   dbo.Product p ON p.sku = i.sku
+WHERE  p.is_discontinued = 1;
+
+SELECT (SELECT COUNT(*) FROM dbo.Product)   AS product_rows,
+       (SELECT COUNT(*) FROM dbo.Inventory) AS inventory_rows;
+=== B1. BEFORE delete : discontinued products and their stock rows ===
+sku      | product_name            | is_discontinued
+---------+-------------------------+----------------
+SKU-1011 | Neem Face Wash          | 1
+SKU-1012 | Wired Earphones (3.5mm) | 1
+
+(2 rows affected)
+sku      | warehouse_id | quantity
+---------+--------------+---------
+SKU-1011 | 2            | 8
+SKU-1012 | 1            | 0
+SKU-1012 | 3            | 4
+
+(3 rows affected)
+product_rows | inventory_rows
+-------------+---------------
+12           | 15
+
+(1 row affected)
+
+DELETE FROM dbo.Product
+WHERE  is_discontinued = 1;     -- FK_Inventory_Product ON DELETE CASCADE removes the stock rows
+(2 rows affected)
+
+PRINT '=== B2. AFTER delete ===';
+SELECT sku, product_name, is_discontinued
+FROM   dbo.Product
+WHERE  is_discontinued = 1;
+
+SELECT sku, warehouse_id, quantity
+FROM   dbo.Inventory
+WHERE  sku IN ('SKU-1011', 'SKU-1012');
+
+SELECT (SELECT COUNT(*) FROM dbo.Product)   AS product_rows,
+       (SELECT COUNT(*) FROM dbo.Inventory) AS inventory_rows;
+=== B2. AFTER delete ===
+sku | product_name | is_discontinued
+----+--------------+----------------
+
+(0 rows affected)
+sku | warehouse_id | quantity
+----+--------------+---------
+
+(0 rows affected)
+product_rows | inventory_rows
+-------------+---------------
+10           | 12
+
+(1 row affected)

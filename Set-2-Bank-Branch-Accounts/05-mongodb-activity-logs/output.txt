@@ -1,0 +1,50 @@
+﻿--- create capped collection ---
+{
+  ok: 1
+}
+{
+  capped: true
+}
+
+--- insert 20 activity documents ---
+inserted: 20
+total documents: 20
+
+--- last five LOGIN events of customer 1001 ---
+[
+  {
+    customer_id: 1001,
+    event: 'LOGIN',
+    channel: 'mobile',
+    ip: '49.37.12.13',
+    at: ISODate('2026-11-17T08:30:00.000Z')
+  },
+  {
+    customer_id: 1001,
+    event: 'LOGIN',
+    channel: 'web',
+    ip: '49.37.12.10',
+    at: ISODate('2026-11-16T20:45:00.000Z')
+  },
+  {
+    customer_id: 1001,
+    event: 'LOGIN',
+    channel: 'mobile',
+    ip: '49.37.12.12',
+    at: ISODate('2026-11-15T07:50:00.000Z')
+  },
+  {
+    customer_id: 1001,
+    event: 'LOGIN',
+    channel: 'web',
+    ip: '49.37.12.10',
+    at: ISODate('2026-11-14T09:12:00.000Z')
+  },
+  {
+    customer_id: 1001,
+    event: 'LOGIN',
+    channel: 'mobile',
+    ip: '49.37.12.11',
+    at: ISODate('2026-11-12T21:05:00.000Z')
+  }
+]

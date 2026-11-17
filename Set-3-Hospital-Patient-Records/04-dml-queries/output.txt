@@ -1,0 +1,105 @@
+-- Day 5 - Set 3 : Task 4
+-- insert, update, delete and retrieval with WHERE and LIKE
+
+USE HospitalDB;
+-- new visit for Priya Nair with its bill
+INSERT INTO Visit (patient_id, doctor_id, visit_date, diagnosis, prescription)
+VALUES (5008, 104, '2026-11-17', 'Migraine', 'Sumatriptan 50mg when needed');
+
+INSERT INTO PatientBill (visit_id, bill_amount) VALUES (SCOPE_IDENTITY(), 600.00);
+
+SELECT v.visit_id, p.full_name, v.visit_date, v.diagnosis, v.status, b.bill_amount, b.paid
+FROM Visit v
+JOIN Patient p          ON p.patient_id = v.patient_id
+LEFT JOIN PatientBill b ON b.visit_id = v.visit_id
+WHERE v.visit_date = '2026-11-17';
+(1 row affected)
+(1 row affected)
+visit_id | full_name  | visit_date | diagnosis | status | bill_amount | paid
+---------+------------+------------+-----------+--------+-------------+-----
+15       | Priya Nair | 2026-11-17 | Migraine  | Open   | 600.00      | 0
+
+(1 row affected)
+-- visit 9 is finished, close it and mark the bill as paid
+SELECT v.visit_id, v.status, v.prescription, b.paid
+FROM Visit v JOIN PatientBill b ON b.visit_id = v.visit_id WHERE v.visit_id = 9;
+
+UPDATE Visit
+SET status = 'Closed', prescription = 'Physiotherapy 2 weeks, knee brace'
+WHERE visit_id = 9;
+
+UPDATE PatientBill SET paid = 1 WHERE visit_id = 9;
+
+SELECT v.visit_id, v.status, v.prescription, b.paid
+FROM Visit v JOIN PatientBill b ON b.visit_id = v.visit_id WHERE v.visit_id = 9;
+visit_id | status | prescription          | paid
+---------+--------+-----------------------+-----
+9        | Open   | Physiotherapy 2 weeks | 0
+
+(1 row affected)
+(1 row affected)
+(1 row affected)
+visit_id | status | prescription                      | paid
+---------+--------+-----------------------------------+-----
+9        | Closed | Physiotherapy 2 weeks, knee brace | 1
+
+(1 row affected)
+-- remove the cancelled visit
+SELECT visit_id, patient_id, visit_date, diagnosis, status FROM Visit WHERE status = 'Cancelled';
+
+DELETE FROM Visit WHERE status = 'Cancelled';
+
+SELECT visit_id, patient_id, visit_date, diagnosis, status FROM Visit WHERE status = 'Cancelled';
+visit_id | patient_id | visit_date | diagnosis       | status
+---------+------------+------------+-----------------+----------
+12       | 5004       | 2026-11-12 | Type 2 Diabetes | Cancelled
+
+(1 row affected)
+(1 row affected)
+visit_id | patient_id | visit_date | diagnosis | status
+---------+------------+------------+-----------+-------
+
+(0 rows affected)
+-- patients who visited in October 2026
+SELECT p.patient_id, p.full_name, v.visit_date, v.diagnosis, d.doctor_name
+FROM Visit v
+JOIN Patient p ON p.patient_id = v.patient_id
+JOIN Doctor d  ON d.doctor_id = v.doctor_id
+WHERE v.visit_date >= '2026-10-01' AND v.visit_date < '2026-11-01'
+ORDER BY v.visit_date;
+patient_id | full_name    | visit_date | diagnosis               | doctor_name
+-----------+--------------+------------+-------------------------+------------------
+5007       | Vikram Singh | 2026-10-02 | Coronary Artery Disease | Dr. Sangeetha Rao
+5002       | Divya Menon  | 2026-10-06 | Viral Fever             | Dr. Fathima Begum
+5005       | Rahul Sharma | 2026-10-11 | Ankle Sprain            | Dr. Naveen Reddy
+5006       | Sneha Patil  | 2026-10-15 | Viral Fever             | Dr. Priya Varma
+5009       | Lakshmi Devi | 2026-10-21 | Type 2 Diabetes         | Dr. Suresh Babu
+5003       | Karthik Raja | 2026-10-29 | Coronary Artery Disease | Dr. Arvind Kumar
+
+(6 rows affected)
+-- doctors of departments starting with 'Cardio' (Cardiology and Cardiothoracic Surgery)
+SELECT d.doctor_id, d.doctor_name, d.specialisation, dp.dept_name
+FROM Doctor d
+JOIN Department dp ON dp.dept_id = d.dept_id
+WHERE dp.dept_name LIKE 'Cardio%'
+ORDER BY dp.dept_name, d.doctor_name;
+
+-- doctors whose name starts with 'Dr. S'
+SELECT doctor_id, doctor_name, specialisation
+FROM Doctor
+WHERE doctor_name LIKE 'Dr. S%';
+doctor_id | doctor_name       | specialisation            | dept_name
+----------+-------------------+---------------------------+-----------------------
+110       | Dr. Kiran Shetty  | Cardiologist              | Cardiology
+101       | Dr. Ramesh Iyer   | Interventional Cardiology | Cardiology
+102       | Dr. Sangeetha Rao | Cardiologist              | Cardiology
+103       | Dr. Arvind Kumar  | Cardiac Surgeon           | Cardiothoracic Surgery
+
+(4 rows affected)
+doctor_id | doctor_name       | specialisation
+----------+-------------------+----------------
+102       | Dr. Sangeetha Rao | Cardiologist
+105       | Dr. Suresh Babu   | Diabetologist
+107       | Dr. Shalini Menon | Sports Medicine
+
+(3 rows affected)

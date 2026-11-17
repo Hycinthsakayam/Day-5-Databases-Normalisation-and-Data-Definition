@@ -1,0 +1,207 @@
+﻿-- Day 5 - Set 2 : Bank Branch Accounts
+-- seed_data.sql : sample rows for every table
+
+USE BankBranchDB;
+INSERT INTO Branch (branch_code, branch_name, city) VALUES
+('CHN001', 'Anna Nagar',   'Chennai'),
+('CHN002', 'T Nagar',      'Chennai'),
+('BLR001', 'Koramangala',  'Bengaluru'),
+('HYD001', 'Gachibowli',   'Hyderabad');
+
+INSERT INTO RelationshipManager (rm_name, phone, branch_id) VALUES
+('Suresh Kumar',  '9840100001', 1),
+('Anitha Raj',    '9840100002', 1),
+('Mohan Das',     '9840100003', 2),
+('Kavya Reddy',   '9840100004', 3),
+('Imran Sheikh',  '9840100005', 4);
+
+INSERT INTO Customer (full_name, pan_no, phone, address_line, city) VALUES
+('Arun Prakash',   'ABCPA1234K', '9000000001', '12, 2nd Main Road, Anna Nagar', 'Chennai'),
+('Divya Menon',    'BCDPM2345L', '9000000002', '45, Usman Road, T Nagar',       'Chennai'),
+('Karthik Raja',   'CDEPR3456M', '9000000003', '7, Lake View Street',           'Chennai'),
+('Meena Iyer',     'DEFPI4567N', '9000000004', '22, 5th Block, Koramangala',    'Bengaluru'),
+('Rahul Sharma',   'EFGPS5678P', '9000000005', '9, HSR Layout',                 'Bengaluru'),
+('Sneha Patil',    'FGHPP6789Q', '9000000006', '101, DLF Road, Gachibowli',     'Hyderabad'),
+('Vikram Singh',   'GHIPS7890R', '9000000007', '3, Kondapur Main Road',         'Hyderabad'),
+('Priya Nair',     'HIJPN8901S', '9000000008', '18, Velachery Bypass',          'Chennai'),
+('Lakshmi Devi',   'IJKPD9012T', '9000000009', '5, Mylapore Tank Street',       'Chennai'),
+('Sanjay Gupta',   'JKLPG0123U', '9000000010', '60, Indiranagar',               'Bengaluru');
+
+INSERT INTO Account (account_number, account_type, branch_id, rm_id, balance, opened_on, status) VALUES
+('100100000001', 'Savings', 1, 1,  85000.00, '2025-04-10', 'Active'),
+('100100000002', 'Current', 1, 2, 240000.00, '2026-07-05', 'Active'),
+('100100000003', 'Savings', 2, 3,  12000.00, '2026-07-21', 'Active'),
+('100100000004', 'Savings', 3, 4,  98000.00, '2026-08-14', 'Active'),
+('100100000005', 'Current', 3, 4, -15000.00, '2026-08-30', 'Active'),   -- overdraft allowed on current
+('100100000006', 'Savings', 4, 5, 150000.00, '2026-09-12', 'Dormant'),
+('100100000007', 'Savings', 4, 5,  30500.00, '2026-09-28', 'Active'),
+('100100000008', 'Savings', 1, 1,  67000.00, '2026-10-03', 'Active'),
+('100100000009', 'Current', 2, 3, 510000.00, '2026-06-25', 'Active'),
+('100100000010', 'Savings', 2, NULL, 0.00,   '2024-01-15', 'Closed'),
+('100100000011', 'Savings', 1, 2,  55000.00, '2026-08-01', 'Active'),
+('100100000012', 'Current', 3, 4,  75000.00, '2026-11-02', 'Active');
+
+INSERT INTO AccountHolder (account_id, customer_id, holder_role) VALUES
+(1, 1001, 'Primary'), (2, 1002, 'Primary'), (3, 1003, 'Primary'),
+(4, 1004, 'Primary'), (5, 1005, 'Primary'), (6, 1006, 'Primary'),
+(7, 1007, 'Primary'), (8, 1008, 'Primary'), (9, 1009, 'Primary'),
+(10, 1010, 'Primary'), (11, 1001, 'Primary'), (11, 1008, 'Joint'),
+(12, 1010, 'Primary'), (4, 1005, 'Joint');
+
+INSERT INTO AccountTransaction (account_id, txn_date, txn_type, amount, remarks) VALUES
+(1, '2026-11-01 10:15', 'CREDIT', 25000.00, 'Salary credit'),
+(1, '2026-11-05 18:40', 'DEBIT',   2000.00, 'ATM withdrawal'),
+(2, '2026-11-03 12:00', 'CREDIT', 90000.00, 'NEFT from client'),
+(3, '2026-10-28 09:30', 'DEBIT',   1500.00, 'UPI - electricity bill'),
+(4, '2026-11-10 14:05', 'CREDIT', 10000.00, 'Cash deposit'),
+(5, '2026-11-11 16:20', 'DEBIT',  20000.00, 'Cheque 000145'),
+(6, '2026-09-15 11:00', 'CREDIT', 150000.00,'Opening deposit'),
+(7, '2026-11-12 08:45', 'DEBIT',    499.00, 'UPI - mobile recharge'),
+(8, '2026-11-13 19:10', 'CREDIT',  5000.00, 'IMPS from Priya'),
+(9, '2026-11-14 13:30', 'DEBIT',  45000.00, 'RTGS to supplier'),
+(11,'2026-11-15 10:00', 'CREDIT',  7000.00, 'Interest credit'),
+(12,'2026-11-16 17:25', 'CREDIT', 75000.00, 'Opening deposit');
+(4 rows affected)
+(5 rows affected)
+(10 rows affected)
+(12 rows affected)
+(14 rows affected)
+(12 rows affected)
+-- savings balance cannot go below zero (should fail)
+INSERT INTO Account (account_number, account_type, branch_id, rm_id, balance, opened_on)
+VALUES ('100100000099', 'Savings', 1, 1, -500.00, '2026-11-17');
+Msg 547, Level 16, State 0, Server Istin\SQLEXPRESS, Line 3
+The INSERT statement conflicted with the CHECK constraint "CK_Savings_Balance". The conflict occurred in database "BankBranchDB", table "dbo.Account".
+The statement has been terminated.
+-- duplicate account number (should fail)
+INSERT INTO Account (account_number, account_type, branch_id, rm_id, balance, opened_on)
+VALUES ('100100000001', 'Current', 1, 1, 1000.00, '2026-11-17');
+Msg 2627, Level 14, State 1, Server Istin\SQLEXPRESS, Line 2
+Violation of UNIQUE KEY constraint 'UQ_Account_Number'. Cannot insert duplicate key in object 'dbo.Account'. The duplicate key value is (100100000001).
+The statement has been terminated.
+SELECT 'Branch' AS table_name, COUNT(*) AS rows FROM Branch
+UNION ALL SELECT 'RelationshipManager', COUNT(*) FROM RelationshipManager
+UNION ALL SELECT 'Customer',            COUNT(*) FROM Customer
+UNION ALL SELECT 'Account',             COUNT(*) FROM Account
+UNION ALL SELECT 'AccountHolder',       COUNT(*) FROM AccountHolder
+UNION ALL SELECT 'AccountTransaction',  COUNT(*) FROM AccountTransaction;
+table_name          | rows
+--------------------+-----
+Branch              | 4
+RelationshipManager | 5
+Customer            | 10
+Account             | 12
+AccountHolder       | 14
+AccountTransaction  | 12
+
+(6 rows affected)
+
+
+﻿-- Day 5 - Set 2 : Task 4
+-- insert, update, delete and filtered SELECT
+
+USE BankBranchDB;
+-- new customer opens a savings account
+INSERT INTO Customer (full_name, pan_no, phone, address_line, city)
+VALUES ('Nithya Ramesh', 'KLMPR1122V', '9000000011', '14, Gandhi Street, Adyar', 'Chennai');
+
+INSERT INTO Account (account_number, account_type, branch_id, rm_id, balance, opened_on)
+VALUES ('100100000013', 'Savings', 2, 3, 20000.00, '2026-11-17');
+
+INSERT INTO AccountHolder (account_id, customer_id)
+VALUES (SCOPE_IDENTITY(), (SELECT customer_id FROM Customer WHERE pan_no = 'KLMPR1122V'));
+
+SELECT a.account_id, a.account_number, c.full_name, a.account_type, a.balance, a.status
+FROM Account a
+JOIN AccountHolder h ON h.account_id = a.account_id
+JOIN Customer c      ON c.customer_id = h.customer_id
+WHERE a.account_number = '100100000013';
+(1 row affected)
+(1 row affected)
+(1 row affected)
+account_id | account_number | full_name     | account_type | balance  | status
+-----------+----------------+---------------+--------------+----------+-------
+15         | 100100000013   | Nithya Ramesh | Savings      | 20000.00 | Active
+
+(1 row affected)
+-- deposit of 15,000 into account 100100000003 and dormant account made active again
+SELECT account_number, balance, status FROM Account
+WHERE account_number IN ('100100000003', '100100000006');
+
+UPDATE Account SET balance = balance + 15000
+WHERE account_number = '100100000003';
+
+UPDATE Account SET status = 'Active'
+WHERE account_number = '100100000006' AND status = 'Dormant';
+
+SELECT account_number, balance, status FROM Account
+WHERE account_number IN ('100100000003', '100100000006');
+account_number | balance   | status
+---------------+-----------+--------
+100100000003   | 12000.00  | Active
+100100000006   | 150000.00 | Dormant
+
+(2 rows affected)
+(1 row affected)
+(1 row affected)
+account_number | balance   | status
+---------------+-----------+-------
+100100000003   | 27000.00  | Active
+100100000006   | 150000.00 | Active
+
+(2 rows affected)
+-- remove the closed account that has no transactions
+SELECT account_id, account_number, status, balance FROM Account WHERE status = 'Closed';
+
+DELETE FROM Account
+WHERE status = 'Closed' AND balance = 0
+  AND account_id NOT IN (SELECT account_id FROM AccountTransaction);
+
+SELECT account_id, account_number, status, balance FROM Account WHERE status = 'Closed';
+SELECT COUNT(*) AS holder_rows_for_deleted_account FROM AccountHolder WHERE account_id = 10;  -- removed by cascade
+account_id | account_number | status | balance
+-----------+----------------+--------+--------
+10         | 100100000010   | Closed | 0.00
+
+(1 row affected)
+(1 row affected)
+account_id | account_number | status | balance
+-----------+----------------+--------+--------
+
+(0 rows affected)
+holder_rows_for_deleted_account
+-------------------------------
+0
+
+(1 row affected)
+-- accounts opened in the last quarter with balance above 50,000
+DECLARE @q_start DATE = DATEADD(QUARTER, DATEDIFF(QUARTER, 0, GETDATE()) - 1, 0);
+DECLARE @q_end   DATE = DATEADD(DAY, -1, DATEADD(QUARTER, DATEDIFF(QUARTER, 0, GETDATE()), 0));
+DECLARE @min_balance DECIMAL(12,2) = 50000;
+
+SELECT @q_start AS quarter_start, @q_end AS quarter_end, @min_balance AS threshold;
+
+SELECT a.account_number, c.full_name, a.account_type, b.branch_name,
+       a.balance, a.opened_on, a.status
+FROM Account a
+JOIN AccountHolder h ON h.account_id = a.account_id AND h.holder_role = 'Primary'
+JOIN Customer c      ON c.customer_id = h.customer_id
+JOIN Branch b        ON b.branch_id = a.branch_id
+WHERE a.opened_on BETWEEN @q_start AND @q_end
+  AND a.balance > @min_balance
+  AND a.account_type IN ('Savings', 'Current')
+  AND (a.status = 'Active' OR a.status = 'Dormant')
+ORDER BY a.opened_on;
+quarter_start | quarter_end | threshold
+--------------+-------------+----------
+2026-07-01    | 2026-09-30  | 50000.00
+
+(1 row affected)
+account_number | full_name    | account_type | branch_name | balance   | opened_on  | status
+---------------+--------------+--------------+-------------+-----------+------------+-------
+100100000002   | Divya Menon  | Current      | Anna Nagar  | 240000.00 | 2026-07-05 | Active
+100100000011   | Arun Prakash | Savings      | Anna Nagar  | 55000.00  | 2026-08-01 | Active
+100100000004   | Meena Iyer   | Savings      | Koramangala | 98000.00  | 2026-08-14 | Active
+100100000006   | Sneha Patil  | Savings      | Gachibowli  | 150000.00 | 2026-09-12 | Active
+
+(4 rows affected)

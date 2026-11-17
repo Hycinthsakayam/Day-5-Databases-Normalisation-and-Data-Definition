@@ -1,0 +1,90 @@
+--- create collection with validation ---
+{
+  ok: 1
+}
+
+--- shape 1 : consultation notes ---
+{
+  acknowledged: true,
+  insertedIds: {
+    '0': ObjectId('6afc465e24453ed8fb75dae7'),
+    '1': ObjectId('6afc465e24453ed8fb75dae8'),
+    '2': ObjectId('6afc465e24453ed8fb75dae9')
+  }
+}
+
+--- shape 2 : lab report notes ---
+{
+  acknowledged: true,
+  insertedIds: {
+    '0': ObjectId('6afc465e24453ed8fb75daea'),
+    '1': ObjectId('6afc465e24453ed8fb75daeb')
+  }
+}
+
+--- invalid note (note_type not allowed, created_at missing) ---
+Rejected -> MongoServerError: Document failed validation
+
+--- query by diagnosis : Type 2 Diabetes ---
+[
+  {
+    patient_id: 5004,
+    note_type: 'lab_report',
+    diagnosis: 'Type 2 Diabetes',
+    tests: [
+      {
+        name: 'HbA1c',
+        value: 8.1,
+        unit: '%',
+        range: '4.0-5.6'
+      },
+      {
+        name: 'Fasting Glucose',
+        value: 162,
+        unit: 'mg/dL',
+        range: '70-100'
+      }
+    ]
+  },
+  {
+    patient_id: 5009,
+    note_type: 'lab_report',
+    diagnosis: 'Type 2 Diabetes',
+    tests: [
+      {
+        name: 'HbA1c',
+        value: 7.2,
+        unit: '%',
+        range: '4.0-5.6'
+      }
+    ]
+  }
+]
+
+--- query by diagnosis : Viral Fever ---
+[
+  {
+    patient_id: 5002,
+    note_type: 'consultation',
+    symptoms: [
+      'fever',
+      'body ache'
+    ],
+    vitals: {
+      temp_f: 101.8,
+      pulse: 96
+    }
+  },
+  {
+    patient_id: 5006,
+    note_type: 'consultation',
+    symptoms: [
+      'fever',
+      'cough'
+    ],
+    vitals: {
+      temp_f: 100.9,
+      weight_kg: 19
+    }
+  }
+]

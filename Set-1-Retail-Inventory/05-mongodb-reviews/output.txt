@@ -1,0 +1,108 @@
+===== 1. createCollection reviews with $jsonSchema validator =====
+{
+  ok: 1
+}
+
+===== 2. insertMany : 10 reviews =====
+{
+  acknowledged: true,
+  insertedIds: {
+    '0': ObjectId('6afc41056b991081c7ea9370'),
+    '1': ObjectId('6afc41056b991081c7ea9371'),
+    '2': ObjectId('6afc41056b991081c7ea9372'),
+    '3': ObjectId('6afc41056b991081c7ea9373'),
+    '4': ObjectId('6afc41056b991081c7ea9374'),
+    '5': ObjectId('6afc41056b991081c7ea9375'),
+    '6': ObjectId('6afc41056b991081c7ea9376'),
+    '7': ObjectId('6afc41056b991081c7ea9377'),
+    '8': ObjectId('6afc41056b991081c7ea9378'),
+    '9': ObjectId('6afc41056b991081c7ea9379')
+  }
+}
+
+===== 3. Validator check : rating 7 must be rejected =====
+Insert rejected -> MongoServerError: Document failed validation
+
+===== 4. find : reviews of SKU-1001 =====
+[
+  {
+    sku: 'SKU-1001',
+    customer: {
+      name: 'Arun'
+    },
+    rating: 5,
+    review_text: 'Loud and clear sound, battery lasts all day.'
+  },
+  {
+    sku: 'SKU-1001',
+    customer: {
+      name: 'Divya'
+    },
+    rating: 3,
+    review_text: 'Good sound but Bluetooth drops sometimes.'
+  }
+]
+
+===== 4b. find : low ratings (rating <= 2), newest first =====
+[
+  {
+    sku: 'SKU-1009',
+    rating: 1,
+    review_text: 'Handle cracked in the first week.',
+    review_date: ISODate('2026-10-10T00:00:00.000Z')
+  },
+  {
+    sku: 'SKU-1005',
+    rating: 2,
+    review_text: 'Motor heats up after ten minutes.',
+    review_date: ISODate('2026-10-07T00:00:00.000Z')
+  }
+]
+
+===== 5. updateOne : add a seller reply and a helpful vote to Rahul's review =====
+{
+  acknowledged: true,
+  insertedId: null,
+  matchedCount: 1,
+  modifiedCount: 1,
+  upsertedCount: 0
+}
+{
+  sku: 'SKU-1005',
+  rating: 2,
+  helpful_votes: 8,
+  seller_reply: 'Sorry! A replacement unit has been shipped.'
+}
+
+===== 6. deleteOne : remove the unverified review of SKU-1002 =====
+count before = 10
+{
+  acknowledged: true,
+  deletedCount: 1
+}
+count after  = 9
+
+===== 7. search_activity collection (append-only log) =====
+{
+  acknowledged: true,
+  insertedIds: {
+    '0': ObjectId('6afc41056b991081c7ea937b'),
+    '1': ObjectId('6afc41056b991081c7ea937c'),
+    '2': ObjectId('6afc41056b991081c7ea937d')
+  }
+}
+[
+  {
+    session_id: 'S-501',
+    term: 'bluetooth speaker',
+    results: 3,
+    at: ISODate('2026-10-12T10:01:00.000Z')
+  },
+  {
+    session_id: 'S-501',
+    term: 'speaker 20w',
+    results: 1,
+    at: ISODate('2026-10-12T10:02:30.000Z'),
+    clicked_sku: 'SKU-1001'
+  }
+]

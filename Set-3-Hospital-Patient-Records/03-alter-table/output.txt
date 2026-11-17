@@ -1,0 +1,64 @@
+-- Day 5 - Set 3 : Task 3
+-- ALTER TABLE : add a column, rename a table, drop a constraint
+
+USE HospitalDB;
+-- 1. add insurance_id to Patient
+ALTER TABLE Patient ADD insurance_id VARCHAR(20) NULL;
+UPDATE Patient SET insurance_id = 'STAR-HL-77812' WHERE patient_id = 5001;
+UPDATE Patient SET insurance_id = 'ICICI-LMB-4501' WHERE patient_id = 5004;
+
+SELECT patient_id, full_name, insurance_id FROM Patient WHERE patient_id <= 5005;
+(1 row affected)
+(1 row affected)
+patient_id | full_name    | insurance_id
+-----------+--------------+---------------
+5001       | Arun Prakash | STAR-HL-77812
+5002       | Divya Menon  | NULL
+5003       | Karthik Raja | NULL
+5004       | Meena Iyer   | ICICI-LMB-4501
+5005       | Rahul Sharma | NULL
+
+(5 rows affected)
+-- 2. rename Billing to PatientBill
+EXEC sp_rename 'Billing', 'PatientBill';
+Caution: Changing any part of an object name could break scripts and stored procedures.
+SELECT name AS table_name FROM sys.tables ORDER BY name;
+
+SELECT name AS foreign_key, OBJECT_NAME(parent_object_id) AS child_table,
+       OBJECT_NAME(referenced_object_id) AS parent_table
+FROM sys.foreign_keys WHERE name = 'FK_Billing_Visit';
+table_name
+----------
+Department
+Doctor
+Patient
+PatientBill
+Visit
+
+(5 rows affected)
+foreign_key      | child_table | parent_table
+-----------------+-------------+-------------
+FK_Billing_Visit | PatientBill | Visit
+
+(1 row affected)
+SELECT TOP 1 * FROM Billing;   -- old name no longer works
+Msg 208, Level 16, State 1, Server Istin\SQLEXPRESS, Line 1
+Invalid object name 'Billing'.
+-- 3. drop the UNIQUE constraint on doctor phone (doctors can share the department landline)
+INSERT INTO Doctor (doctor_name, specialisation, phone, dept_id)
+VALUES ('Dr. Kiran Shetty', 'Cardiologist', '9840200002', 1);    -- fails, phone already used
+Msg 2627, Level 14, State 1, Server Istin\SQLEXPRESS, Line 3
+Violation of UNIQUE KEY constraint 'UQ_Doctor_Phone'. Cannot insert duplicate key in object 'dbo.Doctor'. The duplicate key value is (9840200002).
+The statement has been terminated.
+ALTER TABLE Doctor DROP CONSTRAINT UQ_Doctor_Phone;
+INSERT INTO Doctor (doctor_name, specialisation, phone, dept_id)
+VALUES ('Dr. Kiran Shetty', 'Cardiologist', '9840200002', 1);    -- works now
+
+SELECT doctor_id, doctor_name, phone FROM Doctor WHERE phone = '9840200002';
+(1 row affected)
+doctor_id | doctor_name       | phone
+----------+-------------------+-----------
+102       | Dr. Sangeetha Rao | 9840200002
+110       | Dr. Kiran Shetty  | 9840200002
+
+(2 rows affected)

@@ -1,0 +1,188 @@
+-- Day 5 - Set 3 : Hospital Patient Records
+-- schema.sql : creates HospitalDB and the normalised tables
+
+USE master;
+IF DB_ID('HospitalDB') IS NOT NULL
+BEGIN
+    ALTER DATABASE HospitalDB SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
+    DROP DATABASE HospitalDB;
+END
+CREATE DATABASE HospitalDB;
+USE HospitalDB;
+CREATE TABLE Department (
+    dept_id      INT IDENTITY(1,1) PRIMARY KEY,
+    dept_name    VARCHAR(50) NOT NULL UNIQUE,
+    floor_no     TINYINT     NOT NULL
+);
+
+CREATE TABLE Doctor (
+    doctor_id      INT IDENTITY(101,1) PRIMARY KEY,
+    doctor_name    VARCHAR(60) NOT NULL,
+    specialisation VARCHAR(60) NOT NULL,
+    phone          VARCHAR(15) NOT NULL,
+    dept_id        INT         NOT NULL,
+    CONSTRAINT UQ_Doctor_Phone UNIQUE (phone),
+    CONSTRAINT FK_Doctor_Dept  FOREIGN KEY (dept_id) REFERENCES Department(dept_id)
+);
+
+CREATE TABLE Patient (
+    patient_id    INT IDENTITY(5001,1) PRIMARY KEY,
+    full_name     VARCHAR(60)  NOT NULL,
+    date_of_birth DATE         NOT NULL,
+    gender        CHAR(1)      NOT NULL CHECK (gender IN ('M', 'F', 'O')),
+    phone         VARCHAR(15)  NOT NULL,
+    address_line  VARCHAR(120) NOT NULL,
+    city          VARCHAR(40)  NOT NULL
+);
+
+CREATE TABLE Visit (
+    visit_id      INT IDENTITY(1,1) PRIMARY KEY,
+    patient_id    INT          NOT NULL,
+    doctor_id     INT          NOT NULL,
+    visit_date    DATE         NOT NULL,
+    diagnosis     VARCHAR(100) NOT NULL,
+    prescription  VARCHAR(200) NULL,
+    status        VARCHAR(10)  NOT NULL CONSTRAINT DF_Visit_Status DEFAULT 'Open',
+    CONSTRAINT CK_Visit_Date   CHECK (visit_date >= '2000-01-01' AND visit_date <= CAST(GETDATE() AS DATE)),
+    CONSTRAINT CK_Visit_Status CHECK (status IN ('Open', 'Closed', 'Cancelled')),
+    CONSTRAINT FK_Visit_Patient FOREIGN KEY (patient_id) REFERENCES Patient(patient_id),
+    CONSTRAINT FK_Visit_Doctor  FOREIGN KEY (doctor_id)  REFERENCES Doctor(doctor_id)
+);
+
+CREATE TABLE Billing (
+    bill_id       INT IDENTITY(1,1) PRIMARY KEY,
+    visit_id      INT           NOT NULL UNIQUE,     -- one bill per visit
+    bill_date     DATE          NOT NULL DEFAULT CAST(GETDATE() AS DATE),
+    bill_amount   DECIMAL(10,2) NOT NULL,
+    paid          BIT           NOT NULL DEFAULT 0,
+    CONSTRAINT CK_Bill_Amount  CHECK (bill_amount >= 0),
+    CONSTRAINT FK_Billing_Visit FOREIGN KEY (visit_id) REFERENCES Visit(visit_id) ON DELETE CASCADE
+);
+SELECT TABLE_NAME, CONSTRAINT_NAME, CONSTRAINT_TYPE
+FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS
+ORDER BY TABLE_NAME, CONSTRAINT_TYPE;
+
+SELECT OBJECT_NAME(parent_object_id) AS table_name, name AS default_name, definition
+FROM sys.default_constraints;
+TABLE_NAME | CONSTRAINT_NAME                | CONSTRAINT_TYPE
+-----------+--------------------------------+----------------
+Billing    | CK_Bill_Amount                 | CHECK
+Billing    | FK_Billing_Visit               | FOREIGN KEY
+Billing    | PK__Billing__D706DDB30ECCEC27  | PRIMARY KEY
+Billing    | UQ__Billing__375A75E0925F9CEC  | UNIQUE
+Department | PK__Departme__DCA659749C2A1C10 | PRIMARY KEY
+Department | UQ__Departme__C7D39AE1158E502B | UNIQUE
+Doctor     | FK_Doctor_Dept                 | FOREIGN KEY
+Doctor     | PK__Doctor__F3993564D74BE410   | PRIMARY KEY
+Doctor     | UQ_Doctor_Phone                | UNIQUE
+Patient    | CK__Patient__gender__5165187F  | CHECK
+Patient    | PK__Patient__4D5CE47682BB9905  | PRIMARY KEY
+Visit      | CK_Visit_Date                  | CHECK
+Visit      | CK_Visit_Status                | CHECK
+Visit      | FK_Visit_Patient               | FOREIGN KEY
+Visit      | FK_Visit_Doctor                | FOREIGN KEY
+Visit      | PK__Visit__375A75E185126079    | PRIMARY KEY
+
+(16 rows affected)
+table_name | default_name                   | definition
+-----------+--------------------------------+----------------------------
+Visit      | DF_Visit_Status                | ('Open')
+Billing    | DF__Billing__bill_da__5BE2A6F2 | (CONVERT([date],getdate()))
+Billing    | DF__Billing__paid__5CD6CB2B    | ((0))
+
+(3 rows affected)
+
+
+-- Day 5 - Set 3 : Hospital Patient Records
+-- seed_data.sql : sample rows for every table
+
+USE HospitalDB;
+INSERT INTO Department (dept_name, floor_no) VALUES
+('Cardiology', 2), ('Cardiothoracic Surgery', 3), ('General Medicine', 1),
+('Orthopaedics', 2), ('Paediatrics', 1);
+
+INSERT INTO Doctor (doctor_name, specialisation, phone, dept_id) VALUES
+('Dr. Ramesh Iyer',    'Interventional Cardiology', '9840200001', 1),
+('Dr. Sangeetha Rao',  'Cardiologist',              '9840200002', 1),
+('Dr. Arvind Kumar',   'Cardiac Surgeon',           '9840200003', 2),
+('Dr. Fathima Begum',  'General Physician',         '9840200004', 3),
+('Dr. Suresh Babu',    'Diabetologist',             '9840200005', 3),
+('Dr. Naveen Reddy',   'Orthopaedic Surgeon',       '9840200006', 4),
+('Dr. Shalini Menon',  'Sports Medicine',           '9840200007', 4),
+('Dr. Priya Varma',    'Paediatrician',             '9840200008', 5);
+
+INSERT INTO Patient (full_name, date_of_birth, gender, phone, address_line, city) VALUES
+('Arun Prakash',  '1980-03-14', 'M', '9000100001', '12, 2nd Main Road, Anna Nagar', 'Chennai'),
+('Divya Menon',   '1992-07-22', 'F', '9000100002', '45, Usman Road, T Nagar',       'Chennai'),
+('Karthik Raja',  '1975-11-05', 'M', '9000100003', '7, Lake View Street',           'Chennai'),
+('Meena Iyer',    '1968-01-30', 'F', '9000100004', '22, 5th Block, Koramangala',    'Bengaluru'),
+('Rahul Sharma',  '2001-09-18', 'M', '9000100005', '9, HSR Layout',                 'Bengaluru'),
+('Sneha Patil',   '2016-04-02', 'F', '9000100006', '101, DLF Road, Gachibowli',     'Hyderabad'),
+('Vikram Singh',  '1958-12-25', 'M', '9000100007', '3, Kondapur Main Road',         'Hyderabad'),
+('Priya Nair',    '1988-06-10', 'F', '9000100008', '18, Velachery Bypass',          'Chennai'),
+('Lakshmi Devi',  '1950-08-08', 'F', '9000100009', '5, Mylapore Tank Street',       'Chennai'),
+('Aarav Gupta',   '2019-02-14', 'M', '9000100010', '60, Indiranagar',               'Bengaluru');
+
+INSERT INTO Visit (patient_id, doctor_id, visit_date, diagnosis, prescription, status) VALUES
+(5001, 101, '2026-09-08', 'Hypertension',            'Amlodipine 5mg once daily',          'Closed'),
+(5004, 105, '2026-09-19', 'Type 2 Diabetes',         'Metformin 500mg twice daily',        'Closed'),
+(5007, 102, '2026-10-02', 'Coronary Artery Disease', 'Aspirin 75mg, Atorvastatin 20mg',    'Closed'),
+(5002, 104, '2026-10-06', 'Viral Fever',             'Paracetamol 650mg, rest 3 days',     'Closed'),
+(5005, 106, '2026-10-11', 'Ankle Sprain',            'Ibuprofen 400mg, crepe bandage',     'Closed'),
+(5006, 108, '2026-10-15', 'Viral Fever',             'Paracetamol syrup 5ml',              'Closed'),
+(5009, 105, '2026-10-21', 'Type 2 Diabetes',         'Glimepiride 1mg once daily',         'Closed'),
+(5003, 103, '2026-10-29', 'Coronary Artery Disease', 'Planned for bypass review',          'Open'),
+(5008, 107, '2026-11-03', 'Knee Ligament Strain',    'Physiotherapy 2 weeks',              'Open'),
+(5010, 108, '2026-11-07', 'Common Cold',             'Saline nasal drops',                 'Closed'),
+(5001, 101, '2026-11-10', 'Hypertension',            'Continue Amlodipine 5mg',            'Open'),
+(5004, 105, '2026-11-12', 'Type 2 Diabetes',         NULL,                                 'Cancelled');
+
+-- status not given, so it takes the default 'Open'
+INSERT INTO Visit (patient_id, doctor_id, visit_date, diagnosis, prescription)
+VALUES (5007, 102, '2026-11-14', 'Chest Pain - Evaluation', 'ECG and Troponin test');
+
+INSERT INTO Billing (visit_id, bill_date, bill_amount, paid) VALUES
+(1, '2026-09-08',  800.00, 1), (2, '2026-09-19',  650.00, 1),
+(3, '2026-10-02', 4500.00, 1), (4, '2026-10-06',  500.00, 1),
+(5, '2026-10-11', 1200.00, 1), (6, '2026-10-15',  450.00, 1),
+(7, '2026-10-21',  700.00, 0), (8, '2026-10-29', 2500.00, 0),
+(9, '2026-11-03', 1800.00, 0), (10,'2026-11-07',  350.00, 1),
+(11,'2026-11-10',  800.00, 0);
+(5 rows affected)
+(8 rows affected)
+(10 rows affected)
+(12 rows affected)
+(1 row affected)
+(11 rows affected)
+-- default status
+SELECT visit_id, diagnosis, status FROM Visit WHERE visit_id = 13;
+visit_id | diagnosis               | status
+---------+-------------------------+-------
+13       | Chest Pain - Evaluation | Open
+
+(1 row affected)
+-- visit date in the future (should fail)
+INSERT INTO Visit (patient_id, doctor_id, visit_date, diagnosis)
+VALUES (5002, 104, '2027-01-15', 'Follow up');
+Msg 547, Level 16, State 0, Server Istin\SQLEXPRESS, Line 2
+The INSERT statement conflicted with the CHECK constraint "CK_Visit_Date". The conflict occurred in database "HospitalDB", table "dbo.Visit", column 'visit_date'.
+The statement has been terminated.
+-- negative bill amount (should fail)
+INSERT INTO Billing (visit_id, bill_amount) VALUES (12, -100.00);
+Msg 547, Level 16, State 0, Server Istin\SQLEXPRESS, Line 2
+The INSERT statement conflicted with the CHECK constraint "CK_Bill_Amount". The conflict occurred in database "HospitalDB", table "dbo.Billing", column 'bill_amount'.
+The statement has been terminated.
+SELECT 'Department' AS table_name, COUNT(*) AS rows FROM Department
+UNION ALL SELECT 'Doctor',  COUNT(*) FROM Doctor
+UNION ALL SELECT 'Patient', COUNT(*) FROM Patient
+UNION ALL SELECT 'Visit',   COUNT(*) FROM Visit
+UNION ALL SELECT 'Billing', COUNT(*) FROM Billing;
+table_name | rows
+-----------+-----
+Department | 5
+Doctor     | 8
+Patient    | 10
+Visit      | 13
+Billing    | 11
+
+(5 rows affected)

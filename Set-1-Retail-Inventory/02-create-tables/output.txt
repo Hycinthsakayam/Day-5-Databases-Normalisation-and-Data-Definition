@@ -1,0 +1,156 @@
+/* =====================================================================
+   Day 5 - Set 1 : Retail Inventory and Product Reviews
+   File          : schema.sql   (Task 2)
+   Target        : Microsoft SQL Server 2025
+   Purpose       : Create the RetailInventoryDB database and the 3NF tables
+                   with PRIMARY KEY, FOREIGN KEY, UNIQUE, CHECK, DEFAULT
+                   and referential actions.
+   ===================================================================== */
+
+USE master;
+
+IF DB_ID('RetailInventoryDB') IS NOT NULL
+BEGIN
+    ALTER DATABASE RetailInventoryDB SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
+    DROP DATABASE RetailInventoryDB;
+END
+
+CREATE DATABASE RetailInventoryDB;
+
+USE RetailInventoryDB;
+
+/* ---------- 1. Category : one row per product category ---------- */
+CREATE TABLE dbo.Category
+(
+    category_id    INT IDENTITY(1,1) NOT NULL,
+    category_name  VARCHAR(50)       NOT NULL,
+    CONSTRAINT PK_Category          PRIMARY KEY (category_id),
+    CONSTRAINT UQ_Category_Name     UNIQUE (category_name)
+);
+
+/* ---------- 2. Supplier : supplier name + phone stored once ---------- */
+CREATE TABLE dbo.Supplier
+(
+    supplier_id    INT IDENTITY(1,1) NOT NULL,
+    supplier_name  VARCHAR(100)      NOT NULL,
+    phone          VARCHAR(15)       NOT NULL,
+    email          VARCHAR(100)      NULL,
+    CONSTRAINT PK_Supplier          PRIMARY KEY (supplier_id),
+    CONSTRAINT UQ_Supplier_Name     UNIQUE (supplier_name),
+    CONSTRAINT UQ_Supplier_Phone    UNIQUE (phone),
+    CONSTRAINT CK_Supplier_Phone    CHECK (LEN(phone) >= 10 AND phone NOT LIKE '%[^0-9+ -]%')
+);
+
+/* ---------- 3. Warehouse : one row per storage location ---------- */
+CREATE TABLE dbo.Warehouse
+(
+    warehouse_id   INT IDENTITY(1,1) NOT NULL,
+    warehouse_name VARCHAR(60)       NOT NULL,
+    city           VARCHAR(50)       NOT NULL,
+    CONSTRAINT PK_Warehouse         PRIMARY KEY (warehouse_id),
+    CONSTRAINT UQ_Warehouse_Name    UNIQUE (warehouse_name)
+);
+
+/* ---------- 4. Product : SKU -> name, category, supplier ---------- */
+CREATE TABLE dbo.Product
+(
+    sku              VARCHAR(20)   NOT NULL,
+    product_name     VARCHAR(100)  NOT NULL,
+    category_id      INT           NOT NULL,
+    supplier_id      INT           NOT NULL,
+    unit_price       DECIMAL(10,2) NOT NULL CONSTRAINT DF_Product_Price  DEFAULT (0.00),
+    is_discontinued  BIT           NOT NULL CONSTRAINT DF_Product_Disc   DEFAULT (0),
+    created_at       DATETIME2(0)  NOT NULL CONSTRAINT DF_Product_Created DEFAULT (SYSDATETIME()),
+    CONSTRAINT PK_Product           PRIMARY KEY (sku),
+    CONSTRAINT CK_Product_Price     CHECK (unit_price >= 0),
+    CONSTRAINT FK_Product_Category  FOREIGN KEY (category_id)
+        REFERENCES dbo.Category (category_id)
+        ON DELETE NO ACTION          -- a category in use cannot be removed
+        ON UPDATE CASCADE,
+    CONSTRAINT FK_Product_Supplier  FOREIGN KEY (supplier_id)
+        REFERENCES dbo.Supplier (supplier_id)
+        ON DELETE NO ACTION          -- a supplier with products cannot be removed
+        ON UPDATE CASCADE
+);
+
+/* ---------- 5. Inventory : stock of one SKU in one warehouse ---------- */
+CREATE TABLE dbo.Inventory
+(
+    sku            VARCHAR(20)  NOT NULL,
+    warehouse_id   INT          NOT NULL,
+    quantity       INT          NOT NULL CONSTRAINT DF_Inventory_Qty     DEFAULT (0),
+    reorder_level  INT          NOT NULL CONSTRAINT DF_Inventory_Reorder DEFAULT (10),
+    last_updated   DATETIME2(0) NOT NULL CONSTRAINT DF_Inventory_Updated DEFAULT (SYSDATETIME()),
+    CONSTRAINT PK_Inventory           PRIMARY KEY (sku, warehouse_id),
+    CONSTRAINT CK_Inventory_Qty       CHECK (quantity >= 0),
+    CONSTRAINT CK_Inventory_Reorder   CHECK (reorder_level >= 0),
+    CONSTRAINT FK_Inventory_Product   FOREIGN KEY (sku)
+        REFERENCES dbo.Product (sku)
+        ON DELETE CASCADE            -- removing a SKU removes its stock rows
+        ON UPDATE CASCADE,
+    CONSTRAINT FK_Inventory_Warehouse FOREIGN KEY (warehouse_id)
+        REFERENCES dbo.Warehouse (warehouse_id)
+        ON DELETE NO ACTION          -- a warehouse holding stock cannot be removed
+        ON UPDATE NO ACTION
+);
+
+/* ---------- Verify : list tables and their constraints ---------- */
+SELECT  t.name                 AS table_name,
+        c.CONSTRAINT_NAME      AS constraint_name,
+        c.CONSTRAINT_TYPE      AS constraint_type
+FROM    sys.tables t
+JOIN    INFORMATION_SCHEMA.TABLE_CONSTRAINTS c ON c.TABLE_NAME = t.name
+ORDER BY t.name, c.CONSTRAINT_TYPE, c.CONSTRAINT_NAME;
+table_name | constraint_name        | constraint_type
+-----------+------------------------+----------------
+Category   | PK_Category            | PRIMARY KEY
+Category   | UQ_Category_Name       | UNIQUE
+Inventory  | CK_Inventory_Qty       | CHECK
+Inventory  | CK_Inventory_Reorder   | CHECK
+Inventory  | FK_Inventory_Product   | FOREIGN KEY
+Inventory  | FK_Inventory_Warehouse | FOREIGN KEY
+Inventory  | PK_Inventory           | PRIMARY KEY
+Product    | CK_Product_Price       | CHECK
+Product    | FK_Product_Category    | FOREIGN KEY
+Product    | FK_Product_Supplier    | FOREIGN KEY
+Product    | PK_Product             | PRIMARY KEY
+Supplier   | CK_Supplier_Phone      | CHECK
+Supplier   | PK_Supplier            | PRIMARY KEY
+Supplier   | UQ_Supplier_Name       | UNIQUE
+Supplier   | UQ_Supplier_Phone      | UNIQUE
+Warehouse  | PK_Warehouse           | PRIMARY KEY
+Warehouse  | UQ_Warehouse_Name      | UNIQUE
+
+(17 rows affected)
+
+SELECT  OBJECT_NAME(parent_object_id) AS table_name,
+        name                          AS default_constraint,
+        definition
+FROM    sys.default_constraints
+ORDER BY table_name;
+table_name | default_constraint   | definition
+-----------+----------------------+----------------
+Inventory  | DF_Inventory_Qty     | ((0))
+Inventory  | DF_Inventory_Reorder | ((10))
+Inventory  | DF_Inventory_Updated | (sysdatetime())
+Product    | DF_Product_Price     | ((0.00))
+Product    | DF_Product_Disc      | ((0))
+Product    | DF_Product_Created   | (sysdatetime())
+
+(6 rows affected)
+
+SELECT  name                       AS foreign_key,
+        OBJECT_NAME(parent_object_id)     AS child_table,
+        OBJECT_NAME(referenced_object_id) AS parent_table,
+        delete_referential_action_desc    AS on_delete,
+        update_referential_action_desc    AS on_update
+FROM    sys.foreign_keys
+ORDER BY child_table;
+foreign_key            | child_table | parent_table | on_delete | on_update
+-----------------------+-------------+--------------+-----------+----------
+FK_Inventory_Product   | Inventory   | Product      | CASCADE   | CASCADE
+FK_Inventory_Warehouse | Inventory   | Warehouse    | NO_ACTION | NO_ACTION
+FK_Product_Category    | Product     | Category     | NO_ACTION | CASCADE
+FK_Product_Supplier    | Product     | Supplier     | NO_ACTION | CASCADE
+
+(4 rows affected)

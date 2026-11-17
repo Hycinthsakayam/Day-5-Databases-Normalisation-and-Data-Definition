@@ -1,0 +1,124 @@
+﻿-- Day 5 - Set 2 : Bank Branch Accounts
+-- schema.sql : creates BankBranchDB and the normalised tables
+
+USE master;
+IF DB_ID('BankBranchDB') IS NOT NULL
+BEGIN
+    ALTER DATABASE BankBranchDB SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
+    DROP DATABASE BankBranchDB;
+END
+CREATE DATABASE BankBranchDB;
+USE BankBranchDB;
+CREATE TABLE Branch (
+    branch_id     INT IDENTITY(1,1) PRIMARY KEY,
+    branch_code   CHAR(6)      NOT NULL UNIQUE,      -- e.g. CHN001
+    branch_name   VARCHAR(60)  NOT NULL,
+    city          VARCHAR(40)  NOT NULL
+);
+
+CREATE TABLE RelationshipManager (
+    rm_id         INT IDENTITY(1,1) PRIMARY KEY,
+    rm_name       VARCHAR(60)  NOT NULL,
+    phone         VARCHAR(15)  NOT NULL UNIQUE,
+    branch_id     INT          NOT NULL,
+    CONSTRAINT FK_RM_Branch FOREIGN KEY (branch_id)
+        REFERENCES Branch(branch_id) ON DELETE NO ACTION
+);
+
+CREATE TABLE Customer (
+    customer_id   INT IDENTITY(1001,1) PRIMARY KEY,
+    full_name     VARCHAR(60)  NOT NULL,
+    pan_no        CHAR(10)     NOT NULL UNIQUE,      -- candidate key
+    phone         VARCHAR(15)  NOT NULL,
+    address_line  VARCHAR(120) NOT NULL,
+    city          VARCHAR(40)  NOT NULL
+);
+
+CREATE TABLE Account (
+    account_id     INT IDENTITY(1,1) PRIMARY KEY,
+    account_number CHAR(12)      NOT NULL,
+    account_type   VARCHAR(10)   NOT NULL,
+    branch_id      INT           NOT NULL,
+    rm_id          INT           NULL,
+    balance        DECIMAL(12,2) NOT NULL DEFAULT 0,
+    opened_on      DATE          NOT NULL DEFAULT CAST(GETDATE() AS DATE),
+    status         VARCHAR(10)   NOT NULL DEFAULT 'Active',
+    CONSTRAINT UQ_Account_Number  UNIQUE (account_number),
+    CONSTRAINT CK_Account_Type    CHECK (account_type IN ('Savings', 'Current')),
+    CONSTRAINT CK_Savings_Balance CHECK (account_type <> 'Savings' OR balance >= 0),
+    CONSTRAINT CK_Account_Status  CHECK (status IN ('Active', 'Dormant', 'Closed')),
+    CONSTRAINT FK_Account_Branch  FOREIGN KEY (branch_id)
+        REFERENCES Branch(branch_id) ON DELETE NO ACTION,
+    CONSTRAINT FK_Account_RM      FOREIGN KEY (rm_id)
+        REFERENCES RelationshipManager(rm_id) ON DELETE SET NULL
+);
+
+-- one account can have joint holders, so the key is (account_id, customer_id)
+CREATE TABLE AccountHolder (
+    account_id    INT         NOT NULL,
+    customer_id   INT         NOT NULL,
+    holder_role   VARCHAR(10) NOT NULL DEFAULT 'Primary',
+    CONSTRAINT PK_AccountHolder PRIMARY KEY (account_id, customer_id),
+    CONSTRAINT CK_Holder_Role   CHECK (holder_role IN ('Primary', 'Joint')),
+    CONSTRAINT FK_Holder_Account  FOREIGN KEY (account_id)
+        REFERENCES Account(account_id) ON DELETE CASCADE,
+    CONSTRAINT FK_Holder_Customer FOREIGN KEY (customer_id)
+        REFERENCES Customer(customer_id) ON DELETE NO ACTION
+);
+
+CREATE TABLE AccountTransaction (
+    txn_id        INT IDENTITY(1,1) PRIMARY KEY,
+    account_id    INT           NOT NULL,
+    txn_date      DATETIME2(0)  NOT NULL DEFAULT SYSDATETIME(),
+    txn_type      VARCHAR(6)    NOT NULL CHECK (txn_type IN ('CREDIT', 'DEBIT')),
+    amount        DECIMAL(12,2) NOT NULL CHECK (amount > 0),
+    remarks       VARCHAR(100)  NULL,
+    CONSTRAINT FK_Txn_Account FOREIGN KEY (account_id)
+        REFERENCES Account(account_id) ON DELETE NO ACTION
+);
+SELECT TABLE_NAME, CONSTRAINT_NAME, CONSTRAINT_TYPE
+FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS
+ORDER BY TABLE_NAME, CONSTRAINT_TYPE;
+
+SELECT name AS foreign_key,
+       OBJECT_NAME(parent_object_id)     AS child_table,
+       OBJECT_NAME(referenced_object_id) AS parent_table,
+       delete_referential_action_desc    AS on_delete
+FROM sys.foreign_keys
+ORDER BY child_table;
+TABLE_NAME          | CONSTRAINT_NAME                | CONSTRAINT_TYPE
+--------------------+--------------------------------+----------------
+Account             | CK_Account_Type                | CHECK
+Account             | CK_Savings_Balance             | CHECK
+Account             | CK_Account_Status              | CHECK
+Account             | FK_Account_Branch              | FOREIGN KEY
+Account             | FK_Account_RM                  | FOREIGN KEY
+Account             | PK__Account__46A222CDDA675C1C  | PRIMARY KEY
+Account             | UQ_Account_Number              | UNIQUE
+AccountHolder       | CK_Holder_Role                 | CHECK
+AccountHolder       | FK_Holder_Account              | FOREIGN KEY
+AccountHolder       | FK_Holder_Customer             | FOREIGN KEY
+AccountHolder       | PK_AccountHolder               | PRIMARY KEY
+AccountTransaction  | CK__AccountTr__txn_t__656C112C | CHECK
+AccountTransaction  | CK__AccountTr__amoun__66603565 | CHECK
+AccountTransaction  | FK_Txn_Account                 | FOREIGN KEY
+AccountTransaction  | PK__AccountT__37F0804630721E7B | PRIMARY KEY
+Branch              | PK__Branch__E55E37DE48E4FE48   | PRIMARY KEY
+Branch              | UQ__Branch__A9F83E3BB16B8045   | UNIQUE
+Customer            | PK__Customer__CD65CB85259F528D | PRIMARY KEY
+Customer            | UQ__Customer__93D5B9B38BD97534 | UNIQUE
+RelationshipManager | FK_RM_Branch                   | FOREIGN KEY
+RelationshipManager | PK__Relation__62C3463F157A6561 | PRIMARY KEY
+RelationshipManager | UQ__Relation__B43B145F411FEC2B | UNIQUE
+
+(22 rows affected)
+foreign_key        | child_table         | parent_table        | on_delete
+-------------------+---------------------+---------------------+----------
+FK_Account_Branch  | Account             | Branch              | NO_ACTION
+FK_Account_RM      | Account             | RelationshipManager | SET_NULL
+FK_Holder_Account  | AccountHolder       | Account             | CASCADE
+FK_Holder_Customer | AccountHolder       | Customer            | NO_ACTION
+FK_Txn_Account     | AccountTransaction  | Account             | NO_ACTION
+FK_RM_Branch       | RelationshipManager | Branch              | NO_ACTION
+
+(6 rows affected)
